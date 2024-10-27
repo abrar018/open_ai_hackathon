@@ -1,0 +1,63 @@
+{
+    "E": [
+      {"id": "E1", "question": "Am I the life of the party?"},
+      {"id": "E2", "question": "Do I talk a lot?"},
+      {"id": "E3", "question": "Do I feel comfortable around people?"},
+      {"id": "E4", "question": "Do I keep in the background?"},
+      {"id": "E5", "question": "Do I start conversations?"},
+      {"id": "E6", "question": "Do I have little to say?"},
+      {"id": "E7", "question": "Do I talk to a lot of different people at parties?"},
+      {"id": "E8", "question": "Do I like to draw attention to myself?"},
+      {"id": "E9", "question": "Do I mind being the center of attention?"},
+      {"id": "E10", "question": "Am I quiet around strangers?"}
+    ],
+    "N": [
+      {"id": "N1", "question": "Do I get stressed out easily?"},
+      {"id": "N2", "question": "Am I relaxed most of the time?"},
+      {"id": "N3", "question": "Do I worry about things?"},
+      {"id": "N4", "question": "Do I seldom feel blue?"},
+      {"id": "N5", "question": "Am I easily disturbed?"},
+      {"id": "N6", "question": "Do I get upset easily?"},
+      {"id": "N7", "question": "Do I change my mood a lot?"},
+      {"id": "N8", "question": "Do I have frequent mood swings?"},
+      {"id": "N9", "question": "Do I get irritated easily?"},
+      {"id": "N10", "question": "Do I often feel blue?"}
+    ],
+    "A": [
+      {"id": "A1", "question": "Do I feel little concern for others?"},
+      {"id": "A2", "question": "Am I interested in people?"},
+      {"id": "A3", "question": "Do I insult people?"},
+      {"id": "A4", "question": "Do I sympathize with others' feelings?"},
+      {"id": "A5", "question": "Am I interested in other people's problems?"},
+      {"id": "A6", "question": "Do I have a soft heart?"},
+      {"id": "A7", "question": "Am I really interested in others?"},
+      {"id": "A8", "question": "Do I take time out for others?"},
+      {"id": "A9", "question": "Do I feel others' emotions?"},
+      {"id": "A10", "question": "Do I make people feel at ease?"}
+    ],
+    "C": [
+      {"id": "C1", "question": "Am I always prepared?"},
+      {"id": "C2", "question": "Do I leave my belongings around?"},
+      {"id": "C3", "question": "Do I pay attention to details?"},
+      {"id": "C4", "question": "Do I make a mess of things?"},
+      {"id": "C5", "question": "Do I get chores done right away?"},
+      {"id": "C6", "question": "Do I often forget to put things back in their proper place?"},
+      {"id": "C7", "question": "Do I like order?"},
+      {"id": "C8", "question": "Do I shirk my duties?"},
+      {"id": "C9", "question": "Do I follow a schedule?"},
+      {"id": "C10", "question": "Am I exacting in my work?"}
+    ],
+    "O": [
+      {"id": "O1", "question": "Do I have a rich vocabulary?"},
+      {"id": "O2", "question": "Do I have difficulty understanding abstract ideas?"},
+      {"id": "O3", "question": "Do I have a vivid imagination?"},
+      {"id": "O4", "question": "Am I interested in abstract ideas?"},
+      {"id": "O5", "question": "Do I have excellent ideas?"},
+      {"id": "O6", "question": "Do I have a good imagination?"},
+      {"id": "O7", "question": "Am I quick to understand things?"},
+      {"id": "O8", "question": "Do I use difficult words?"},
+      {"id": "O9", "question": "Do I spend time reflecting on things?"},
+      {"id": "O10", "question": "Am I full of ideas?"}
+    ]
+  }
+  

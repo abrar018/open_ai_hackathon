@@ -29,17 +29,6 @@ const formatMessage = (message: VercelChatMessage) => {
 
 const TEMPLATE = `Ask the user the following questions one by one and store the answers and come up with a conclusion at the end of the conversation.
 
-E1	I am the life of the party.
-E2	I don't talk a lot.
-E3	I feel comfortable around people.
-E4	I keep in the background.
-E5	I start conversations.
-E6	I have little to say.
-E7	I talk to a lot of different people at parties.
-E8	I don't like to draw attention to myself.
-E9	I don't mind being the center of attention.
-E10	I am quiet around strangers.
-
 ==============================
 Context: {context}
 ==============================
@@ -67,8 +56,6 @@ export async function POST(req: Request) {
             "E2"	:"I don't talk a lot.",
             "E3"	:"I feel comfortable around people.",
             "E4"	:"I keep in the background.",
-            "E5"	:"I start conversations.",
-            "E6"	:"I have little to say.",
         })]);
 
         const prompt = PromptTemplate.fromTemplate(TEMPLATE);

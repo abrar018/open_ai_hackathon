@@ -3,11 +3,12 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useChat } from "ai/react"
-import { useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 export function Chat() {
     const { messages, input, handleInputChange, handleSubmit } = useChat();
     const chatParent = useRef<HTMLUListElement>(null)
+    const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
         const domNode = chatParent.current
@@ -16,9 +17,25 @@ export function Chat() {
         }
     })
 
+    const toggleVisibility = () => {
+        setIsVisible(!isVisible);
+    };
+
     return (
         <main className="flex flex-col w-full h-screen max-h-dvh bg-background">
+            {isVisible && (
+            <>
+            <h1 className="text-5xl font-bold flex items-center justify-center h-screen">PsyCurio</h1>
 
+            <div className="flex items-center justify-center h-screen">
+                <Button onClick={toggleVisibility} className="text-2xl py-4 px-8 rounded-lg bg-blue-500 text-white hover:bg-blue-700">
+                    {isVisible ? "Start the personality test" : "Show Chat"}
+                </Button>
+            </div>
+            </>
+            )}
+            {!isVisible && (
+                <>
             <header className="p-4 border-b w-full max-w-3xl mx-auto">
                 <h1 className="text-2xl font-bold">AI Chat</h1>
             </header>
@@ -53,6 +70,8 @@ export function Chat() {
                     ))}
                 </ul >
             </section>
+            </>
+            )}
         </main>
     )
 }

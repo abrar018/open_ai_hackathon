@@ -27,8 +27,7 @@ const formatMessage = (message: VercelChatMessage) => {
     return `${message.role}: ${message.content}`;
 };
 
-const TEMPLATE = `Ask the user the following questions one by one and store the answers and come up with a conclusion at the end of the conversation.
-
+const TEMPLATE = `Ask the user the following questions one by one and store the answers and come up with a conclusion at the end of the conversation with percentages of level of extrovertedness.
 ==============================
 Context: {context}
 ==============================
@@ -55,7 +54,6 @@ export async function POST(req: Request) {
             "E1"	:"I am the life of the party.",
             "E2"	:"I don't talk a lot.",
             "E3"	:"I feel comfortable around people.",
-            "E4"	:"I keep in the background.",
         })]);
 
         const prompt = PromptTemplate.fromTemplate(TEMPLATE);

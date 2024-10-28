@@ -27,7 +27,10 @@ const formatMessage = (message: VercelChatMessage) => {
     return `${message.role}: ${message.content}`;
 };
 
-const TEMPLATE = `Ask the user the following questions one by one and store the answers and come up with a conclusion at the end of the conversation with percentages of level of extrovertedness.
+const TEMPLATE = `Ask the user the following questions one by one and store the answers in memory. 
+Judge the user on these traits and come up with a conclusion at the end of the conversation. Conclusion should talk about each of the 5 traits on the user. 
+After each question, if the user seems unsure or provides ambiguous answers break the flow of preset questions and ask an additional clarification question that adapts to previous answer
+
 ==============================
 Context: {context}
 ==============================
@@ -51,9 +54,11 @@ export async function POST(req: Request) {
         // load a JSON object
         const textSplitter = new CharacterTextSplitter();
         const docs = await textSplitter.createDocuments([JSON.stringify({
-            "E1"	:"I am the life of the party.",
-            "E2"	:"I don't talk a lot.",
-            "E3"	:"I feel comfortable around people.",
+            "Extroversion1"	:"I am the life of the party.",
+            "Agreeableness1"	:"I don't talk a lot.",
+            "Neuroticism1"	:"I feel comfortable around people.",
+            "Openness1"	:"I keep in the background.",
+            
         })]);
 
         const prompt = PromptTemplate.fromTemplate(TEMPLATE);
@@ -88,10 +93,22 @@ export async function POST(req: Request) {
             chat_history: formattedPreviousMessages.join('\n'),
             question: currentMessageContent,
         });
-
-        // Respond with the stream
+        
+        // Create a new stream that adds a delay between each chunk of data
+        const delayedStream = new ReadableStream({
+            async pull(controller) {
+                for await (const chunk of stream) {
+                    controller.enqueue(chunk);
+                    // Introduce a delay of 1000 milliseconds (1 second) between chunks
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+                controller.close();
+            }
+        });
+        
+        // Respond with the delayed stream
         return new StreamingTextResponse(
-            stream.pipeThrough(createStreamDataTransformer()),
+            delayedStream.pipeThrough(createStreamDataTransformer()),
         );
     } catch (e: any) {
         return Response.json({ error: e.message }, { status: e.status ?? 500 });

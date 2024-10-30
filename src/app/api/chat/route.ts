@@ -1,116 +1,155 @@
 import {
-    Message as VercelChatMessage,
-    StreamingTextResponse,
-    createStreamDataTransformer
+  Message as VercelChatMessage,
+  StreamingTextResponse,
+  createStreamDataTransformer,
 } from 'ai';
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { HttpResponseOutputParser } from 'langchain/output_parsers';
-
-import { JSONLoader } from "langchain/document_loaders/fs/json";
-import { RunnableSequence } from '@langchain/core/runnables'
+import { RunnableSequence } from '@langchain/core/runnables';
 import { formatDocumentsAsString } from 'langchain/util/document';
 import { CharacterTextSplitter } from 'langchain/text_splitter';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
 
-// const loader = new JSONLoader(
-//     "src/data/question.json",
-//     ["/state", "/code", "/nickname", "/website", "/admission_date", "/admission_number", "/capital_city", "/capital_url", "/population", "/population_rank", "/constitution_url", "/twitter_url"],
-// );
+export const dynamic = 'force-dynamic';
 
-export const dynamic = 'force-dynamic'
-
-/**
- * Basic memory formatter that stringifies and passes
- * message history directly into the model.
- */
 const formatMessage = (message: VercelChatMessage) => {
-    return `${message.role}: ${message.content}`;
+  return `${message.role}: ${message.content}`; // Removed semicolon
 };
 
-const TEMPLATE = `Ask the user the following questions one by one and store the answers in memory. 
-Judge the user on these traits and come up with a conclusion at the end of the conversation. Conclusion should talk about each of the 5 traits on the user. 
-After each question, if the user seems unsure or provides ambiguous answers break the flow of preset questions and ask an additional clarification question that adapts to previous answer
+const TEMPLATE = `
+Ask the user the following questions one by one from the context provided. Do not provide any evaluation or analysis until all questions have been answered. After all questions have been answered, evaluate the combined responses based on the Big Five personality traits: Extraversion, Openness, Conscientiousness, Agreeableness, and Neuroticism. Assign a score from 1 to 10 for each trait by analyzing the user's responses as a whole.
+After each question, if the user seems unsure or provides ambiguous answers, break the flow of preset questions and ask an additional clarification question that adapts to the previous answer.
 
 ==============================
 Context: {context}
 ==============================
-Current conversation: {chat_history}
+Current conversation:
+{chat_history}
+
+Instructions for Evaluation:
+- **Extraversion**: Evaluate based on how social, outgoing, or energetic the responses appear.
+- **Openness**: Evaluate based on signs of creativity, curiosity, or willingness to embrace new ideas.
+- **Conscientiousness**: Evaluate based on indications of organization, responsibility, or dependability.
+- **Agreeableness**: Evaluate based on expressions of kindness, cooperation, or empathy.
+- **Neuroticism**: Evaluate based on signs of anxiety, emotional instability, or sensitivity.
+
+For each response, **do not provide any evaluation**. Only after all questions have been answered, analyze all the responses in the context of these traits and provide a rating from 1 to 10 for each.
+
+Example Response Format at the end:
+{{
+  "ratings": {{
+      "Extraversion": 7,
+      "Openness": 4,
+      "Conscientiousness": 6,
+      "Agreeableness": 8,
+      "Neuroticism": 3
+  }}
+}}
 
 user: {question}
-assistant:`;
+assistant: ;`;
 
 
 export async function POST(req: Request) {
-    try {
-        // Extract the `messages` from the body of the request
-        const { messages } = await req.json();
+  try {
+    // Generate a unique ID for this session
+    const sessionId = uuidv4(); // Create a unique session ID
 
-        const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
+    const { messages } = await req.json();
+    const formattedPreviousMessages = messages.slice(0, -1).map(formatMessage);
+    const currentMessageContent = messages[messages.length - 1].content;
 
-        const currentMessageContent = messages[messages.length - 1].content;
+    // Load context data
+    const textSplitter = new CharacterTextSplitter();
+    const docs = await textSplitter.createDocuments([
+      JSON.stringify({
+        E1: 'I am the life of the party.',
+        E2: "I don't talk a lot.",
+        E3: 'I feel comfortable around people.',
+        E4: 'I keep in the background.',
+      }),
+    ]);
 
-        // const docs = await loader.load();
+    const prompt = PromptTemplate.fromTemplate(TEMPLATE);
 
-        // load a JSON object
-        const textSplitter = new CharacterTextSplitter();
-        const docs = await textSplitter.createDocuments([JSON.stringify({
-            "Extroversion1"	:"I am the life of the party.",
-            "Agreeableness1"	:"I don't talk a lot.",
-            "Neuroticism1"	:"I feel comfortable around people.",
-            "Openness1"	:"I keep in the background.",
-            
-        })]);
+    const model = new ChatOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+      model: 'gpt-4o',
+      temperature: 0,
+      streaming: true,
+      verbose: true,
+    });
 
-        const prompt = PromptTemplate.fromTemplate(TEMPLATE);
+    const parser = new HttpResponseOutputParser();
 
-        const model = new ChatOpenAI({
-            apiKey: process.env.OPENAI_API_KEY!,
-            model: 'gpt-4o',
-            temperature: 0,
-            streaming: true,
-            verbose: true,
-        });
+    const chain = RunnableSequence.from([
+      {
+        question: (input: any) => input.question,
+        chat_history: (input: any) => input.chat_history,
+        context: () => formatDocumentsAsString(docs),
+      },
+      prompt,
+      model,
+      parser,
+    ]);
 
-        /**
-       * Chat models stream message chunks rather than bytes, so this
-       * output parser handles serialization and encoding.
-       */
-        const parser = new HttpResponseOutputParser();
+    const stream = await chain.stream({
+      chat_history: formattedPreviousMessages.join('\n'),
+      question: currentMessageContent,
+    });
 
-        const chain = RunnableSequence.from([
-            {
-                question: (input) => input.question,
-                chat_history: (input) => input.chat_history,
-                context: () => formatDocumentsAsString(docs),
-            },
-            prompt,
-            model,
-            parser,
-        ]);
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    let assistantResponse = '';
 
-        // Convert the response into a friendly text-stream
-        const stream = await chain.stream({
-            chat_history: formattedPreviousMessages.join('\n'),
-            question: currentMessageContent,
-        });
-        
-        // Create a new stream that adds a delay between each chunk of data
-        const delayedStream = new ReadableStream({
-            async pull(controller) {
-                for await (const chunk of stream) {
-                    controller.enqueue(chunk);
-                    // Introduce a delay of 1000 milliseconds (1 second) between chunks
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                }
-                controller.close();
-            }
-        });
-        
-        // Respond with the delayed stream
-        return new StreamingTextResponse(
-            delayedStream.pipeThrough(createStreamDataTransformer()),
-        );
-    } catch (e: any) {
-        return Response.json({ error: e.message }, { status: e.status ?? 500 });
-    }
+    (async () => {
+      for await (const chunk of stream) {
+        const textChunk = decoder.decode(chunk);
+        assistantResponse += textChunk;
+        await writer.write(encoder.encode(textChunk));
+      }
+      writer.close();
+
+      let ratingsJson = '';
+
+      let codeBlockMatch = assistantResponse.match(/```json\s*([\s\S]*?)\s*```/i);
+      if (codeBlockMatch && codeBlockMatch[1]) {
+        ratingsJson = codeBlockMatch[1];
+      } else {
+        const jsonMatch = assistantResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch && jsonMatch[0]) {
+          ratingsJson = jsonMatch[0];
+        }
+      }
+
+      if (ratingsJson) {
+        try {
+          const ratings = JSON.parse(ratingsJson);
+
+          // Use sessionId to create a unique file name for each user session
+          const fileName = `ratings_${sessionId}.json`;
+          fs.writeFileSync(fileName, JSON.stringify(ratings, null, 2));
+
+          console.log(`Ratings saved successfully to ${fileName}`);
+        } catch (error) {
+          console.error('Error parsing ratings:', error);
+        }
+      } else {
+        console.error('Ratings not found in the assistant response.');
+      }
+    })();
+
+    return new StreamingTextResponse(
+      readable.pipeThrough(createStreamDataTransformer()),
+    );
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: e.status ?? 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }

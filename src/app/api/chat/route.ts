@@ -150,18 +150,3 @@ export async function POST(req: Request) {
       });
     }
   }
-  
-  // GET route to serve ratings JSON based on sessionId
-  router.get('/api/getRatings', (req, res) => {
-    const sessionId = req.query.sessionId as string;
-    const fileName = path.join(__dirname, `ratings_${sessionId}.json`);
-  
-    if (fs.existsSync(fileName)) {
-      const ratingsData = JSON.parse(fs.readFileSync(fileName, 'utf-8'));
-      res.json(ratingsData);
-    } else {
-      res.status(404).json({ error: 'Ratings not found for this session.' });
-    }
-  });
-  
-  export default router;
